@@ -1,0 +1,18 @@
+# DECISIONS
+
+One line per non-obvious decision, newest at the bottom.
+
+- Repo root is the opened workspace directory itself (it was empty); no extra `sutra/` nesting — quickstart paths stay one level shallower.
+- Python deps via `requirements.txt` (not pyproject): simplest thing that Docker + venv both consume.
+- Local dev runs Python 3.13 (machine default); Docker image pins 3.11 per spec — code targets 3.11+ stdlib only.
+- `bus.py` supports Redis Streams (docker/live) AND an in-process asyncio queue (`SUTRA_BUS=memory`) so `make test`/`make bench` need no Redis; batch/benchmark mode bypasses the bus entirely and feeds fusion directly (determinism + speed).
+- Rule hits are deduped per (rule_id, dedup_key) within an incident; R8 is the one *escalating* rule — it re-fires at each whole GB of vulnerable egress crossed (each GB is a new violation), which is what lets Scenario C reach risk ≥ 80 under the pinned 0.65/0.35 formula.
+- Incidents are entity-*set* scoped (connected via shared entities), not single-entity: a credential-stuffing burst + the ATO on one victim merge into ONE alert; primary entity = most points, tie-broken customer > staff > terminal > server > account > device > payee > asn > ip.
+- Scenario B debits a dormant business account (spec leaves the account unspecified): adds R9+R5+R11 to R6+R7 so rules alone carry B past risk 85 even if ML degrades; story stays "compromised terminal drains dormant corporate account".
+- ML score is only computed when an incident has ≥25 rule points (ML alone can never fire an alert: 0.35×100 = 35 < 60); keeps the benign day fast and FP-proof by construction.
+- Servers get no IsolationForest score (features are customer/staff-shaped); quantum alerts ride on rule points alone.
+- Siloed mode = security+transaction domains only (no quantum monitoring — models today's SIEM+FRM world, so Scenario C is missed), with naive rule variants (S2 device-OR-asn, S5 velocity 2×, S7 flat off-hours) defined alongside R1–R11 in rules.yaml.
+- Benign generator explicitly avoids the ₹44k–50k structuring band and never sends ≥₹10L to unknown payees: synthetic data tuned so the fused false-positive rate is provably zero on the benign day (stated honestly in benchmark_report.md).
+- Narratives are Jinja templates (4: ato / terminal / quantum / generic), never an LLM — deterministic, offline, hallucination-proof (trust decision recorded in ARCHITECTURE.md).
+- Events live in in-memory ring buffers; only alerts/actions are persisted to SQLite (alerts embed their evidence copies, so the signed record is self-contained).
+- Frontend calls the backend directly at NEXT_PUBLIC_API_BASE (default http://localhost:8000) with CORS enabled, rather than proxying through Next — fewer moving parts on the projector.
