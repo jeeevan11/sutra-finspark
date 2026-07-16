@@ -1,0 +1,85 @@
+{
+  "generated_ts": "2026-07-16T17:09:44.330342+00:00",
+  "seed": 42,
+  "duration_hours": 24,
+  "modes": {
+    "siloed": {
+      "total_alerts": 35,
+      "true_positives": 5,
+      "false_positives": 30,
+      "precision": 0.143,
+      "recall": 0.667,
+      "detected_scenarios": [
+        "A",
+        "B"
+      ]
+    },
+    "fused": {
+      "total_alerts": 3,
+      "true_positives": 3,
+      "false_positives": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "detected_scenarios": [
+        "A",
+        "B",
+        "C"
+      ]
+    }
+  },
+  "scenarios": {
+    "A": {
+      "name": "Account takeover + structuring",
+      "fused": {
+        "detected": true,
+        "risk": 100,
+        "time_to_detect_s": 240
+      },
+      "siloed": {
+        "detected": true,
+        "max_score": 60,
+        "alerts": 3,
+        "note": "3 fragmented low-context alert(s), max score 60 \u2014 buried among 30 same-day false positives"
+      }
+    },
+    "B": {
+      "name": "Compromised branch terminal",
+      "fused": {
+        "detected": true,
+        "risk": 100,
+        "time_to_detect_s": 420
+      },
+      "siloed": {
+        "detected": true,
+        "max_score": 40,
+        "alerts": 2,
+        "note": "2 fragmented low-context alert(s), max score 40 \u2014 buried among 30 same-day false positives"
+      }
+    },
+    "C": {
+      "name": "HNDL exfiltration (quantum)",
+      "fused": {
+        "detected": true,
+        "risk": 100,
+        "time_to_detect_s": 480
+      },
+      "siloed": {
+        "detected": false,
+        "max_score": 0,
+        "alerts": 0,
+        "note": "missed entirely \u2014 no siloed rule covers this signal"
+      }
+    }
+  },
+  "summary": {
+    "alert_reduction_pct": 91.4,
+    "fp_reduction_pct": 100.0,
+    "analyst_hours_saved_per_day": 10.7,
+    "rupees_at_risk_flagged": 1999700.0
+  },
+  "_bench_wall_seconds": {
+    "fused": 1.47,
+    "siloed": 0.24,
+    "events": 101135
+  }
+}
