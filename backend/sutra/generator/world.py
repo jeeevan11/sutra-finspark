@@ -195,10 +195,13 @@ def build_world(seed: int) -> World:
         staff[sid] = st
         terminals[tid] = sid
 
+    # Declared crypto posture drives benign TLS noise and the /quantum inventory:
+    # APP-1 fully hybrid (green), DB-1/DB-2 classical X25519 (amber — DB-2 goes red
+    # only when Scenario C pushes RSA-2048 exfil through it), APP-2 legacy (red).
     servers = {
         "DB-1": Server("DB-1", {"X25519": 0.7, "X25519Kyber768-hybrid": 0.3}),
-        "DB-2": Server("DB-2", {"X25519": 0.85, "ECDHE-P256": 0.15}),
-        "APP-1": Server("APP-1", {"X25519Kyber768-hybrid": 0.9, "X25519": 0.1}),
+        "DB-2": Server("DB-2", {"X25519": 1.0}),
+        "APP-1": Server("APP-1", {"X25519Kyber768-hybrid": 1.0}),
         "APP-2": Server("APP-2", {"ECDHE-P256": 0.55, "RSA-2048": 0.25, "X25519": 0.2}),
     }
     known_tls_dsts = [_ip(rng) for _ in range(12)]

@@ -9,6 +9,9 @@ SEED = int(os.environ.get("SUTRA_SEED", "42"))
 BUS_MODE = os.environ.get("SUTRA_BUS", "memory")  # "redis" | "memory"
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 DATA_DIR = Path(os.environ.get("SUTRA_DATA_DIR", "data"))
+# repo-root/deliverables when running from a checkout; overridden in Docker
+DELIVERABLES_DIR = Path(os.environ.get(
+    "SUTRA_DELIVERABLES_DIR", str(Path(__file__).resolve().parents[2] / "deliverables")))
 
 IST = ZoneInfo("Asia/Kolkata")
 UTC = timezone.utc

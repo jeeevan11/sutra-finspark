@@ -80,13 +80,21 @@ class NoiseGenerator:
         return minute_start + timedelta(seconds=self.rng.uniform(0, 59.9))
 
     def _txn_amount(self, daily_mean: float) -> float:
-        # A single txn is a lognormal slice of the daily baseline; resample away from
-        # the structuring band so R4 can never fire on benign traffic (synthetic-data
-        # tuning, stated in the benchmark methodology note).
+        # Each customer sees ~140 txns/day at these Poisson rates, so a single txn is
+        # a small slice of the daily baseline (mostly UPI micro-payments) with a 5%
+        # heavier tail — the per-customer daily SUM then tracks daily_outflow_mean,
+        # which keeps the velocity rules (R5 3×, siloed S5 2×) honest. Amounts are
+        # resampled away from the ₹44–50k structuring band so R4 can never fire on
+        # benign traffic (synthetic-data tuning, stated in the benchmark methodology).
+        base = max(daily_mean, 200)
         for _ in range(6):
-            amt = round(math.exp(self.rng.gauss(math.log(max(daily_mean, 200) / 8), 0.55)), 2)
+            if self.rng.random() < 0.95:
+                amt = math.exp(self.rng.gauss(math.log(base / 140), 0.5))
+            else:
+                amt = math.exp(self.rng.gauss(math.log(base / 10), 0.4))
+            amt = round(amt, 2)
             if not (44_000 <= amt < 50_000):
-                return max(10.0, amt)
+                return max(5.0, amt)
         return 39_500.0
 
     def _login(self, ts: datetime, success: bool) -> AuthLogin:

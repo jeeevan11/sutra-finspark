@@ -1,0 +1,174 @@
+# SUTRA detection rules — config + documentation. Condition logic lives in
+# rules/engine.py keyed by rule id; points/windows/params here are live config
+# (hot-reloaded when this file's mtime changes).
+
+rules:
+  - id: R1
+    name: failed_login_burst
+    domain: security
+    points: 30
+    window_minutes: 5
+    description: >
+      More than `threshold` failed logins from one ASN within the window
+      (credential stuffing). Taints the ASN and every touched account/customer
+      so later activity on them correlates into the same incident.
+    params:
+      threshold: 20
+      refire_minutes: 15
+      evidence_sample: 8
+
+  - id: R2
+    name: new_device_new_asn_login
+    domain: security
+    points: 25
+    window_minutes: 0
+    description: >
+      Successful login where BOTH the device and the ASN are unseen for that
+      customer. A new phone on the home ISP does not fire this (that is the
+      borderline pattern siloed tools false-positive on).
+
+  - id: R3
+    name: new_payee_after_suspicious_login
+    domain: fused
+    points: 20
+    window_minutes: 30
+    description: >
+      payee_added within the window after an R2 hit on the same customer.
+
+  - id: R4
+    name: structuring
+    domain: transaction
+    points: 35
+    window_minutes: 30
+    description: >
+      3+ transactions each within 10% below ₹50,000 (i.e. ₹45,000–49,999) on the
+      same account inside the window — classic sub-threshold structuring.
+    params:
+      band_low: 45000
+      band_high: 50000
+      min_count: 3
+
+  - id: R5
+    name: outflow_velocity
+    domain: transaction
+    points: 20
+    window_minutes: 60
+    description: >
+      1-hour outflow exceeding `multiple` × the customer's 30-day daily average.
+    params:
+      multiple: 3.0
+      refire_minutes: 60
+
+  - id: R6
+    name: edr_then_txn_same_terminal
+    domain: fused
+    points: 45
+    window_minutes: 60
+    description: >
+      Transaction ≥ ₹5,00,000 from a terminal with an EDR alert in the prior
+      window. The correlation-is-the-product rule: each half is low-risk alone.
+    params:
+      min_amount: 500000
+
+  - id: R7
+    name: off_hours_staff_txn
+    domain: transaction
+    points: 20
+    window_minutes: 0
+    description: >
+      Staff-initiated transaction ≥ ₹1,00,000 outside the staff member's
+      baseline working hours (IST).
+    params:
+      min_amount: 100000
+
+  - id: R8
+    name: quantum_vulnerable_bulk_egress
+    domain: quantum
+    points: 40
+    window_minutes: 30
+    description: >
+      Cumulative egress over quantum-vulnerable key exchange (RSA-2048 /
+      ECDHE-P256) to unknown destinations exceeding 1 GB in the window.
+      ESCALATING: re-fires at each additional whole GB (sustained exfiltration
+      is not a single violation), capped per source.
+    params:
+      gb_step: 1000000000
+      max_levels: 8
+
+  - id: R9
+    name: dormant_account_activation
+    domain: transaction
+    points: 15
+    window_minutes: 0
+    description: >
+      Transaction on an account dormant for more than 90 days.
+
+  - id: R10
+    name: impossible_travel
+    domain: security
+    points: 30
+    window_minutes: 0
+    description: >
+      Two successful logins for the same customer whose geo distance implies
+      > 900 km/h. Fires at most once per customer per hour (dedup) so a travel
+      round-trip cannot stack points.
+    params:
+      max_kmh: 900
+      refire_minutes: 60
+
+  - id: R11
+    name: unknown_payee_high_value
+    domain: transaction
+    points: 15
+    window_minutes: 0
+    description: >
+      Transaction ≥ ₹10,00,000 to a payee the customer has never paid before.
+    params:
+      min_amount: 1000000
+
+# Siloed mode = today's separate SIEM + FRM world, used ONLY by the benchmark:
+# per-domain incidents, alert threshold 25 points, no cross-domain rules (R3/R6
+# cannot exist), no quantum monitoring (R8 absent — nobody watches for HNDL
+# today), no ML. Naive single-signal variants replace the fused versions.
+siloed_variants:
+  - id: S1
+    base: R1
+    points: 30
+    description: identical burst rule — a SIEM catches credential stuffing.
+
+  - id: S2
+    name: new_device_login
+    domain: security
+    points: 25
+    description: naive novelty — fires on a new device OR a new ASN alone.
+
+  - id: S4
+    base: R4
+    points: 35
+    description: FRM catches structuring on a single account.
+
+  - id: S5
+    name: outflow_velocity_naive
+    domain: transaction
+    points: 25
+    description: raw velocity at 2× daily average — no baseline context.
+    params:
+      multiple: 2.0
+      refire_minutes: 60
+
+  - id: S7
+    base: R7
+    points: 25
+    description: any off-hours staff txn ≥ ₹1,00,000 — no EDR context available.
+
+  - id: S9
+    base: R9
+    points: 15
+
+  - id: S10
+    base: R10
+    points: 30
+
+  - id: S11
+    base: R11
+    points: 15
