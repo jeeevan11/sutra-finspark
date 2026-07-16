@@ -60,6 +60,7 @@ class FusionEngine:
         self.alerts: dict[str, Alert] = {}
         self.alert_labels: dict[str, Counter] = {}  # benchmark ground-truth bookkeeping
         self._seq = 0
+        self._merge_notes: list[tuple[str, Alert]] = []
 
     # ------------------------------------------------------------------ ingest
 
@@ -80,7 +81,8 @@ class FusionEngine:
             self._apply(inc, hit)
             if inc not in touched:
                 touched.append(inc)
-        out: list[tuple[str, Alert]] = []
+        out: list[tuple[str, Alert]] = self._merge_notes
+        self._merge_notes = []
         for inc in touched:
             note = self._score_and_alert(inc, ev.ts)
             if note is not None:
@@ -111,6 +113,21 @@ class FusionEngine:
             primary.created_ts = min(primary.created_ts, other.created_ts)
             if primary.alert_id is None:
                 primary.alert_id = other.alert_id
+            elif other.alert_id is not None and other.alert_id != primary.alert_id:
+                # both sides already alerted: consolidate — retire the absorbed
+                # alert visibly instead of orphaning it open at a stale risk
+                dead = self.alerts.get(other.alert_id)
+                if dead is not None and dead.status != "dismissed":
+                    dead.status = "dismissed"
+                    dead.narrative = (f"[Merged into {primary.alert_id} — this "
+                                      f"incident correlated with a wider campaign] "
+                                      + dead.narrative)
+                    dead.updated_ts = max(dead.updated_ts, hit.ts)
+                    if self.signer is not None:
+                        self.signer.sign_alert(dead)
+                    if self.store is not None:
+                        self.store.append_record(dead)
+                    self._merge_notes.append(("alert_updated", dead))
             self.incidents.remove(other)
         return primary
 

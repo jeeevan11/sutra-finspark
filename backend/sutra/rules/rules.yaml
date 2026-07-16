@@ -110,8 +110,9 @@ rules:
     window_minutes: 0
     description: >
       Two successful logins for the same customer whose geo distance implies
-      > 900 km/h. Fires at most once per customer per hour (dedup) so a travel
-      round-trip cannot stack points.
+      > 900 km/h, from a device the customer has never used — a known handset
+      in a new city is roaming, not teleportation. Fires at most once per
+      customer per hour (dedup) so a travel round-trip cannot stack points.
     params:
       max_kmh: 900
       refire_minutes: 60

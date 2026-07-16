@@ -186,18 +186,43 @@ def test_r9_dormant(world, engine):
 
 def test_r10_impossible_travel(world, engine):
     engine.observe(login(world, "CUST-0014", ts=T0, geo="Mumbai"))
-    fast = engine.observe(login(world, "CUST-0014", ts=T0 + timedelta(minutes=5), geo="Delhi"))
+    fast = engine.observe(login(world, "CUST-0014", ts=T0 + timedelta(minutes=5),
+                                geo="Delhi", device="DEV-TAKEOVER1"))
     assert "R10" in _rules(fast)
     engine.observe(login(world, "CUST-0015", ts=T0, geo="Mumbai"))
-    slow = engine.observe(login(world, "CUST-0015", ts=T0 + timedelta(hours=2), geo="Delhi"))
+    slow = engine.observe(login(world, "CUST-0015", ts=T0 + timedelta(hours=2),
+                                geo="Delhi", device="DEV-TAKEOVER2"))
     assert "R10" not in _rules(slow)
+
+
+def test_r10_known_device_is_roaming_not_teleportation(world, engine):
+    """A handset the customer already owns showing up in a new city is roaming /
+    a SIM hop — the exculpatory context a siloed geo rule cannot see."""
+    engine.observe(login(world, "CUST-0021", ts=T0, geo="Mumbai"))
+    fast_known = engine.observe(login(world, "CUST-0021",
+                                      ts=T0 + timedelta(minutes=5), geo="Delhi"))
+    assert "R10" not in _rules(fast_known)
 
 
 def test_r10_dedup_round_trip(world, engine):
     engine.observe(login(world, "CUST-0016", ts=T0, geo="Mumbai"))
-    out = engine.observe(login(world, "CUST-0016", ts=T0 + timedelta(minutes=5), geo="Delhi"))
-    back = engine.observe(login(world, "CUST-0016", ts=T0 + timedelta(minutes=10), geo="Mumbai"))
+    out = engine.observe(login(world, "CUST-0016", ts=T0 + timedelta(minutes=5),
+                               geo="Delhi", device="DEV-TAKEOVER3"))
+    back = engine.observe(login(world, "CUST-0016", ts=T0 + timedelta(minutes=10),
+                                geo="Mumbai", device="DEV-TAKEOVER4"))
     assert "R10" in _rules(out) and "R10" not in _rules(back)
+
+
+def test_r4_dedup_key_stable_across_sliding_window(world, engine):
+    """A long structuring run must keep ONE dedup key even after early txns age
+    out of the 30m window — otherwise the same run re-scores its points."""
+    hits = []
+    for i in range(5):  # txns at t+0, 12, 24, 36, 48m — window slides past t+0
+        hits += engine.observe(txn(world, "CUST-0022", 49_500,
+                                   ts=T0 + timedelta(minutes=12 * i)))
+    r4 = [h for h in hits if h.rule_id == "R4"]
+    assert r4, "structuring fires"
+    assert len({h.dedup_key for h in r4}) == 1, "one run = one dedup key"
 
 
 def test_r11_unknown_high_value(world, engine):

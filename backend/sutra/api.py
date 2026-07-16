@@ -90,12 +90,17 @@ async def verify_alert(request: Request, alert_id: str) -> dict:
     if latest is None:
         raise HTTPException(404, f"no signed record for {alert_id}")
     payload_json, signature, _prev, _rh = latest
+    try:
+        record_fp = json.loads(payload_json).get("pubkey_fingerprint", "")
+    except json.JSONDecodeError:
+        record_fp = ""
     return {
         "alert_id": alert_id,
         "signature_valid": rt.signer.verify_record(payload_json, signature),
-        "chain_valid": AlertSigner.verify_chain(rt.store.all_records()),
+        "chain_valid": rt.signer.verify_chain(rt.store.all_records()),
         "algorithm": "ML-DSA-65",
-        "pubkey_fingerprint": rt.signer.fingerprint,
+        # the fingerprint bound into the signed record, not the live signer's
+        "pubkey_fingerprint": record_fp or rt.signer.fingerprint,
     }
 
 
@@ -207,6 +212,6 @@ async def replay_inject(request: Request, name: str) -> dict:
     rt = _rt(request)
     if name not in ("A", "B", "C"):
         raise HTTPException(422, "scenario must be A, B or C")
-    rt.replay.start()  # injecting implies the demo should be running
+    rt.replay.ensure_running()  # start if idle, but never clear an operator pause
     rt.replay.inject(name)
     return {"ok": True, "status": _status(rt)}

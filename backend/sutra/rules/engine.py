@@ -87,6 +87,7 @@ class RuleEngine:
         self._r1_last: dict[str, datetime] = {}
         self._r1_live: dict[str, Hit] = {}   # fired burst hits, detail kept fresh
         self._band_txns: dict[str, deque] = defaultdict(deque)       # acct -> (ts, eid, amount)
+        self._r4_anchor: dict[str, str] = {}   # acct -> first event id of current run
         self._cust_txns: dict[str, deque] = defaultdict(deque)       # cust -> (ts, amount, eid)
         self._r5_last: dict[str, datetime] = {}
         self._edr: dict[str, deque] = defaultdict(deque)             # term -> (ts, eid, sev)
@@ -201,7 +202,10 @@ class RuleEngine:
 
         cfg = self._c("R10") or self._c("S10")
         prev = self._last_login.get(ev.customer_id)
-        if cfg and prev and ev.geo in ALL_GEOS and prev[1] in ALL_GEOS:
+        # device-novelty gate: a KNOWN handset appearing in a new city is roaming /
+        # a SIM hop, not teleportation — the exculpatory half a siloed geo rule
+        # cannot see. A takeover login (new device) still trips this.
+        if cfg and prev and new_dev and ev.geo in ALL_GEOS and prev[1] in ALL_GEOS:
             dist = haversine_km(prev[1], ev.geo)
             hours = max((ev.ts - prev[0]).total_seconds(), 1.0) / 3600
             kmh = dist / hours
@@ -252,8 +256,14 @@ class RuleEngine:
             hi = float(cfg.params.get("band_high", 50_000))
             if lo <= ev.amount < hi:
                 dq = self._band_txns[ev.account_id]
+                window = timedelta(minutes=cfg.window_minutes)
+                # anchor the dedup key to the FIRST txn of a contiguous run — keying
+                # on the sliding window's oldest entry would re-key (and re-score)
+                # the same run as early txns age out
+                if not dq or (ev.ts - dq[-1][0]) > window:
+                    self._r4_anchor[ev.account_id] = ev.event_id
                 dq.append((ev.ts, ev.event_id, ev.amount))
-                cutoff = ev.ts - timedelta(minutes=cfg.window_minutes)
+                cutoff = ev.ts - window
                 while dq and dq[0][0] < cutoff:
                     dq.popleft()
                 if len(dq) >= int(cfg.params.get("min_count", 3)):
@@ -264,7 +274,7 @@ class RuleEngine:
                         f"within {span}m (total {inr(sum(a for _, _, a in dq))})",
                         ev.ts, [ev.customer_id, ev.account_id, ev.payee_id],
                         [eid for _, eid, _ in dq],
-                        f"{cfg.id}:{ev.account_id}:{dq[0][1]}",
+                        f"{cfg.id}:{ev.account_id}:{self._r4_anchor[ev.account_id]}",
                     ))
 
         cfg = self._c("R5") or self._c("S5")

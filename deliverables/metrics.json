@@ -1,5 +1,5 @@
 {
-  "generated_ts": "2026-07-16T17:09:44.330342+00:00",
+  "generated_ts": "2026-07-16T18:01:15.490647+00:00",
   "seed": 42,
   "duration_hours": 24,
   "modes": {
@@ -78,8 +78,8 @@
     "rupees_at_risk_flagged": 1999700.0
   },
   "_bench_wall_seconds": {
-    "fused": 1.47,
-    "siloed": 0.24,
+    "fused": 1.32,
+    "siloed": 0.2,
     "events": 101135
   }
 }

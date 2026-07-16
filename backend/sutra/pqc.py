@@ -21,9 +21,11 @@ GENESIS = "GENESIS"
 
 
 def canonical_payload(alert: Alert) -> dict:
+    # Everything except the signature itself is signed — including the key
+    # fingerprint, so a record is bound to the key that produced it and verify
+    # can report the RECORD's fingerprint, not whatever key is currently live.
     d = alert.model_dump(mode="json")
     d.pop("signature", None)
-    d.pop("pubkey_fingerprint", None)
     return d
 
 
@@ -79,13 +81,13 @@ class AlertSigner:
         except Exception:  # noqa: BLE001 — malformed sig = invalid, never a crash
             return False
 
-    @staticmethod
-    def verify_chain(records: list[tuple[str, str, str, str]]) -> bool:
+    def verify_chain(self, records: list[tuple[str, str, str, str]]) -> bool:
         """records: (payload_json, signature_hex, prev_hash, record_hash) in
-        insertion order. Valid iff (a) every record's stored hash matches a fresh
-        recomputation of its content (self-integrity — this is what catches a
-        mutated chain TAIL, which linkage alone cannot see) and (b) every
-        prev_hash equals its predecessor's hash (linkage)."""
+        insertion order. Valid iff, for EVERY record: (a) its ML-DSA signature
+        verifies (an unkeyed hash alone could be recomputed by a tamperer —
+        including on the chain tail, which linkage cannot see), (b) its stored
+        hash matches a fresh recomputation, and (c) its prev_hash equals its
+        predecessor's hash (linkage)."""
         prev = GENESIS
         for payload_json, signature_hex, prev_hash, stored_hash in records:
             try:
@@ -94,8 +96,9 @@ class AlertSigner:
                 return False
             if prev_hash != prev or stored_prev != prev:
                 return False
-            recomputed = record_hash(payload_json, signature_hex)
-            if recomputed != stored_hash:
+            if record_hash(payload_json, signature_hex) != stored_hash:
                 return False
-            prev = recomputed
+            if not self.verify_record(payload_json, signature_hex):
+                return False
+            prev = stored_hash
         return True

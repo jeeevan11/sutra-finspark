@@ -38,12 +38,12 @@ def test_tamper_breaks_signature_and_chain():
         a = _alert(i)
         signer.sign_alert(a)
         store.append_record(a)
-    assert AlertSigner.verify_chain(store.all_records())
+    assert signer.verify_chain(store.all_records())
     mutated = store.tamper("ALT-0002")
     assert mutated and "amount" in mutated
     payload_json, sig, _, _ = store.latest_record("ALT-0002")
     assert not signer.verify_record(payload_json, sig)
-    assert not AlertSigner.verify_chain(store.all_records())
+    assert not signer.verify_chain(store.all_records())
     # the untampered record still verifies
     p1, s1, _, _ = store.latest_record("ALT-0001")
     assert signer.verify_record(p1, s1)
@@ -61,7 +61,7 @@ def test_chain_links_updates_of_same_alert():
     store.append_record(a)
     records = store.all_records()
     assert len(records) == 2
-    assert AlertSigner.verify_chain(records)
+    assert signer.verify_chain(records)
     assert a.prev_hash != "GENESIS"
 
 
@@ -73,3 +73,41 @@ def test_wrong_key_rejects():
     store.append_record(a)
     payload_json, sig, _, _ = store.latest_record(a.alert_id)
     assert not signer_b.verify_record(payload_json, sig)
+
+
+def test_smart_tamper_recomputing_hashes_still_caught():
+    """A tamperer who also recomputes the record_hash defeats pure linkage —
+    the chain walk must verify each record's ML-DSA signature to catch it."""
+    import json as j
+
+    from sqlalchemy import select
+    from sqlalchemy.orm import Session
+
+    from sutra.pqc import record_hash
+    from sutra.store import AlertRecord
+
+    signer = AlertSigner()
+    store = AlertStore()
+    a = _alert(1)
+    signer.sign_alert(a)
+    store.append_record(a)
+    with Session(store.engine) as s:
+        rec = s.execute(select(AlertRecord)).scalar_one()
+        p = j.loads(rec.payload_json)
+        p["risk"] = 5
+        rec.payload_json = j.dumps(p, sort_keys=True, separators=(",", ":"))
+        rec.record_hash = record_hash(rec.payload_json, rec.signature)
+        s.commit()
+    assert not signer.verify_chain(store.all_records())
+
+
+def test_fingerprint_bound_into_signed_record():
+    import json as j
+
+    signer = AlertSigner()
+    store = AlertStore()
+    a = _alert(1)
+    signer.sign_alert(a)
+    store.append_record(a)
+    payload_json, _, _, _ = store.latest_record(a.alert_id)
+    assert j.loads(payload_json)["pubkey_fingerprint"] == signer.fingerprint

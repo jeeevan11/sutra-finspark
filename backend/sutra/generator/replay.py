@@ -80,6 +80,14 @@ class LiveReplay:
         if self._task is None or self._task.done():
             self._task = asyncio.create_task(self._loop(), name="live-replay")
 
+    def ensure_running(self) -> None:
+        """Start the loop if idle WITHOUT touching an operator's manual pause —
+        injecting a scenario while paused must not resume the clock mid-sentence."""
+        if not self.running:
+            self.start()
+        elif self._task is None or self._task.done():
+            self._task = asyncio.create_task(self._loop(), name="live-replay")
+
     def pause_toggle(self) -> bool:
         """Returns new paused state."""
         if self.running:
