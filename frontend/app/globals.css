@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0b1220;
+  --panel: #111a2c;
+  --edge: #1e293b;
+  --text: #e2e8f0;
+  --muted: #64748b;
+  --accent: #22d3ee;
+  --critical: #ef4444;
+  --high: #f59e0b;
+  --medium: #fbbf24;
+  --ok: #34d399;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Subtle background flash on newly arrived rows — fades out over ~1s. */
+@keyframes row-flash {
+  0% {
+    background-color: rgba(34, 211, 238, 0.16);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.flash-row {
+  animation: row-flash 1s ease-out 1;
+}
+
+/* Calm pulse for the LIVE dot. */
+@keyframes live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.live-pulse {
+  animation: live-pulse 1.6s ease-in-out infinite;
+}
+
+/* Brief button flash on successful inject. */
+@keyframes btn-flash {
+  0% {
+    background-color: rgba(34, 211, 238, 0.45);
+    border-color: var(--accent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.btn-flash {
+  animation: btn-flash 0.7s ease-out 1;
+}
+
+/* Dense scrollbars for the event rivers. */
+.river-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.river-scroll::-webkit-scrollbar-thumb {
+  background: var(--edge);
+  border-radius: 3px;
+}
+.river-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
