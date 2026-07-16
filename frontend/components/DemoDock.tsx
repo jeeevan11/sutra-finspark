@@ -226,8 +226,8 @@ export function DemoDock() {
           </button>
         </div>
 
-        <div className="mt-2 flex justify-between font-mono text-[10px] text-muted/80">
-          <span>keys: 1/2/3 inject · space pause · r reset</span>
+        <div className="mt-2 flex justify-between gap-2 whitespace-nowrap font-mono text-[10px] text-muted/80">
+          <span>1/2/3 inject · spc pause · r reset</span>
           {status && backendUp && <span>{status.events_emitted} ev</span>}
         </div>
       </div>

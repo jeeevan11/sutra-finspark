@@ -47,7 +47,7 @@ function Chip({
 
 export default function AlertsPage() {
   const router = useRouter();
-  const { backendUp, subscribeAlerts } = useSutra();
+  const { backendUp, subscribeAlerts, simNowMs } = useSutra();
   const [alerts, setAlerts] = useState<AlertSummary[] | null>(null);
   const [statusFilter, setStatusFilter] = useState<AlertStatus | "all">("all");
   const [severityFilter, setSeverityFilter] = useState<Severity | "all">("all");
@@ -209,7 +209,7 @@ export default function AlertsPage() {
                       {a.entity_id}
                     </td>
                     <td className="px-2 py-2.5 font-mono text-xs text-muted">
-                      {relativeAge(a.created_ts)}
+                      {relativeAge(a.created_ts, simNowMs)}
                     </td>
                     <td className="px-4 py-2.5">
                       <StatusPill status={a.status} />

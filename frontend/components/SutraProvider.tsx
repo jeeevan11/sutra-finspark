@@ -22,6 +22,12 @@ interface SutraContextValue {
   status: ReplayStatus | null;
   /** True once the last status poll succeeded. */
   backendUp: boolean;
+  /**
+   * Current SIMULATED time as epoch ms (parsed from ReplayStatus.sim_time).
+   * Alert timestamps live on the sim clock, so relative ages must be computed
+   * against this, not wall time. Null while replay status is unavailable.
+   */
+  simNowMs: number | null;
   /** Connection state of the shared /ws/alerts socket. */
   alertsWsStatus: WsStatus;
   /** Subscribe to alert lifecycle pushes; returns an unsubscribe fn. */
@@ -88,9 +94,22 @@ export function SutraProvider({ children }: { children: React.ReactNode }) {
     setBackendUp(true);
   }, []);
 
+  let simNowMs: number | null = null;
+  if (status !== null) {
+    const parsed = Date.parse(status.sim_time);
+    if (Number.isFinite(parsed)) simNowMs = parsed;
+  }
+
   return (
     <SutraContext.Provider
-      value={{ status, backendUp, alertsWsStatus, subscribeAlerts, applyStatus }}
+      value={{
+        status,
+        backendUp,
+        simNowMs,
+        alertsWsStatus,
+        subscribeAlerts,
+        applyStatus,
+      }}
     >
       {children}
     </SutraContext.Provider>

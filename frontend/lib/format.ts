@@ -57,12 +57,24 @@ export function formatISTFull(ts: string | null | undefined): string {
   return istDateTime.format(d);
 }
 
-/** Relative age like "42s", "3m", "5h", "2d". */
-export function relativeAge(ts: string | null | undefined): string {
+/**
+ * Relative age like "42s", "3m", "5h", "2d".
+ * Alert timestamps live on the backend's SIMULATED clock, so pass the current
+ * sim time (epoch ms, from ReplayStatus.sim_time) as `nowMs`; falls back to
+ * wall clock only when replay status is unavailable. Negative ages clamp to "0s".
+ */
+export function relativeAge(
+  ts: string | null | undefined,
+  nowMs?: number | null,
+): string {
   if (!ts) return "—";
   const d = new Date(ts);
   if (Number.isNaN(d.getTime())) return "—";
-  const s = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000));
+  const now =
+    nowMs !== undefined && nowMs !== null && Number.isFinite(nowMs)
+      ? nowMs
+      : Date.now();
+  const s = Math.max(0, Math.floor((now - d.getTime()) / 1000));
   if (s < 60) return `${s}s`;
   const m = Math.floor(s / 60);
   if (m < 60) return `${m}m`;
