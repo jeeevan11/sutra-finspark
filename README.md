@@ -90,11 +90,12 @@ open-source; the finished app runs air-gapped.
 
 ## Screenshots
 
-<!-- Add captures from the running app before submission -->
-- `docs/live-ops.png` — Live Ops with both event rivers flowing
-- `docs/alert-detail.png` — the alert-detail "money screen"
-- `docs/metrics.png` — fused-vs-siloed benchmark
-- `docs/quantum.png` — HNDL crypto inventory
+Captured from the running Docker stack — see [`deliverables/screenshots/`](deliverables/screenshots/):
+
+- [Live Ops mid-Scenario A](deliverables/screenshots/live-ops-scenario-a.png) — both event rivers flowing, the critical account-takeover alert in the feed
+- [Alert detail "money screen"](deliverables/screenshots/alert-detail-scenario-a.png) — narrative, full evidence chain, rule-hit breakdown, ML-DSA-65 signature
+- [Fused-vs-siloed benchmark](deliverables/screenshots/metrics.png) — −91.4% alert volume, 0 false positives
+- [HNDL crypto inventory](deliverables/screenshots/quantum.png) — DB-2 flagged quantum-vulnerable red
 
 ## Honest limitations
 
