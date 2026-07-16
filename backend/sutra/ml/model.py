@@ -41,6 +41,10 @@ class MLScorer:
     def observe(self, ev: Event) -> None:
         self.tracker.observe(ev)
 
+    def reset_windows(self) -> None:
+        """Drop rolling per-entity state (demo replay reset) — model stays."""
+        self.tracker = FeatureTracker(self.world)
+
     def score(self, entity_id: str, now: datetime) -> float:
         """0 (benign) .. 40 (extreme anomaly)."""
         if not self.ready:

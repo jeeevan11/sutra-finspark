@@ -88,6 +88,16 @@ class Txn(BaseEvent):
 
 Event = Union[AuthLogin, EdrAlert, TlsSession, PayeeAdded, PasswordReset, Txn]
 
+EVENT_TYPES: dict[str, type] = {
+    "auth_login": AuthLogin, "edr_alert": EdrAlert, "tls_session": TlsSession,
+    "payee_added": PayeeAdded, "password_reset": PasswordReset, "txn": Txn,
+}
+
+
+def parse_event(d: dict[str, Any]) -> Event:
+    return EVENT_TYPES[d["type"]].model_validate(d)
+
+
 VULNERABLE_KEX = ("RSA-2048", "ECDHE-P256")
 
 

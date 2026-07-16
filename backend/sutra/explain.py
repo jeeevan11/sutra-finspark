@@ -72,8 +72,9 @@ def guess_pattern(rule_ids: set[str]) -> str:
         return "quantum_exfil"
     if "R6" in rule_ids:
         return "terminal_compromise"
-    if ("R2" in rule_ids or "R1" in rule_ids) and (
-            "R4" in rule_ids or "R3" in rule_ids or "R5" in rule_ids):
+    if "R2" in rule_ids and rule_ids & {"R1", "R3", "R4", "R5", "R10"}:
+        return "ato"
+    if "R1" in rule_ids and rule_ids & {"R3", "R4", "R5"}:
         return "ato"
     return "generic"
 

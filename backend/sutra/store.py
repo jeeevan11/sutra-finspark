@@ -72,13 +72,15 @@ class AlertStore:
                 return None
             payload = json.loads(rec.payload_json)
             mutated = None
-            for item in payload.get("evidence", []):
-                amt = item.get("detail", {}).get("amount")
-                if isinstance(amt, (int, float)) and amt > 0:
-                    item["detail"]["amount"] = round(amt / 10, 2)
-                    mutated = f"evidence {item['event_id']}: amount ₹{amt:,.0f} → ₹{amt / 10:,.0f}"
-                    break
-            if mutated is None:
+            best = max((i for i in payload.get("evidence", [])
+                        if isinstance(i.get("detail", {}).get("amount"), (int, float))
+                        and i["detail"]["amount"] > 0),
+                       key=lambda i: i["detail"]["amount"], default=None)
+            if best is not None:
+                amt = best["detail"]["amount"]
+                best["detail"]["amount"] = round(amt / 10, 2)
+                mutated = f"evidence {best['event_id']}: amount ₹{amt:,.0f} → ₹{amt / 10:,.0f}"
+            else:
                 payload["risk"] = 5
                 mutated = "risk → 5"
             rec.payload_json = json.dumps(payload, sort_keys=True, separators=(",", ":"))

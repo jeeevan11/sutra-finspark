@@ -96,13 +96,18 @@ class LiveReplay:
                 pass
             self._task = None
 
+    # Live injections compress intra-scenario gaps (spec 6.4) so the full story —
+    # including the critical alert — lands well inside 20s of wall clock at x20.
+    LIVE_COMPRESS = 0.5
+
     def inject(self, name: str) -> int:
         """Schedule scenario events starting a few sim-seconds from now.
         Returns the instance number used."""
         instance = self._inject_counts[name]
         self._inject_counts[name] += 1
         t0 = self.sim_now + timedelta(seconds=5 * self.speed / 20)
-        for ev in SCENARIOS[name](self.world, t0, self._scenario_rng, self._ids, instance):
+        for ev in SCENARIOS[name](self.world, t0, self._scenario_rng, self._ids,
+                                  instance, compress=self.LIVE_COMPRESS):
             heapq.heappush(self._pending, (ev.ts, ev.event_id, ev))
         return instance
 

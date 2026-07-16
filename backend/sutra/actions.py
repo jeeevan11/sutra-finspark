@@ -45,7 +45,7 @@ class ActionAdapter:
         else:
             result = "alert dismissed by analyst"
 
-        now = self.clock() if self.clock is not None else datetime.now(timezone.utc)
+        now = (self.clock() if self.clock is not None else None) or datetime.now(timezone.utc)
         self._n += 1
         alert.status = _STATUS[action]
         alert.updated_ts = now

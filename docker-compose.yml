@@ -18,8 +18,10 @@ services:
       SUTRA_BUS: ${SUTRA_BUS:-redis}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       SUTRA_DATA_DIR: /app/data
+      SUTRA_DELIVERABLES_DIR: /app/deliverables
     volumes:
       - backend-data:/app/data
+      - ./deliverables:/app/deliverables:ro
     depends_on:
       redis:
         condition: service_healthy

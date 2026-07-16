@@ -20,15 +20,15 @@ from .noise import IdSource
 from .world import CITIES, FOREIGN_GEOS, World
 
 
-def _m(t0: datetime, minutes: float) -> datetime:
-    return t0 + timedelta(minutes=minutes)
+def _m(t0: datetime, minutes: float, compress: float = 1.0) -> datetime:
+    return t0 + timedelta(minutes=minutes * compress)
 
 
 # ------------------------------------------------------------------ Scenario A
 # Account takeover + structuring against CUST-0421.
 
 def scenario_a(world: World, t0: datetime, rng: random.Random, ids: IdSource,
-               instance: int = 0) -> list[Event]:
+               instance: int = 0, compress: float = 1.0) -> list[Event]:
     victim = world.customers[world.victim_customer]
     acc = victim.accounts[0]
     asn = world.hostile_asns[instance % len(world.hostile_asns)]
@@ -46,7 +46,7 @@ def scenario_a(world: World, t0: datetime, rng: random.Random, ids: IdSource,
     for i in range(40):
         tgt = targets[i % len(targets)]
         events.append(AuthLogin(
-            event_id=ids.event(), ts=_m(t0, 3 * i / 40), scenario="A",
+            event_id=ids.event(), ts=_m(t0, 3 * i / 40, compress), scenario="A",
             customer_id=tgt.customer_id, account_id=tgt.accounts[0],
             device_id=f"DEV-BOT{rng.randrange(16**4):04X}", ip=atk_ip, asn=asn,
             geo=geo, success=False, channel="netbanking",
@@ -54,14 +54,14 @@ def scenario_a(world: World, t0: datetime, rng: random.Random, ids: IdSource,
 
     # t+4m: successful takeover login — new device AND new ASN, foreign geo.
     events.append(AuthLogin(
-        event_id=ids.event(), ts=_m(t0, 4), scenario="A",
+        event_id=ids.event(), ts=_m(t0, 4, compress), scenario="A",
         customer_id=victim.customer_id, account_id=acc, device_id=atk_device,
         ip=atk_ip, asn=asn, geo=geo, success=True, channel="netbanking",
     ))
 
     # t+6m: never-seen payee added from the same device.
     events.append(PayeeAdded(
-        event_id=ids.event(), ts=_m(t0, 6), scenario="A",
+        event_id=ids.event(), ts=_m(t0, 6, compress), scenario="A",
         customer_id=victim.customer_id, account_id=acc, payee_id=mule,
         payee_name="QuickCash Traders", device_id=atk_device, ip=atk_ip,
     ))
@@ -69,7 +69,7 @@ def scenario_a(world: World, t0: datetime, rng: random.Random, ids: IdSource,
     # t+9/12/15m: structuring — 3 UPI transfers just under the ₹50k threshold.
     for k in range(3):
         events.append(Txn(
-            event_id=ids.event(), ts=_m(t0, 9 + 3 * k), scenario="A",
+            event_id=ids.event(), ts=_m(t0, 9 + 3 * k, compress), scenario="A",
             txn_id=ids.txn(), account_id=acc, customer_id=victim.customer_id,
             txn_type="UPI", amount=49_900.0, payee_id=mule, payee_known=False,
             channel="netbanking", device_id=atk_device, ip=atk_ip, geo=geo,
@@ -81,7 +81,7 @@ def scenario_a(world: World, t0: datetime, rng: random.Random, ids: IdSource,
 # Compromised branch terminal TERM-114 / STAFF-77 draining a dormant business account.
 
 def scenario_b(world: World, t0: datetime, rng: random.Random, ids: IdSource,
-               instance: int = 0) -> list[Event]:
+               instance: int = 0, compress: float = 1.0) -> list[Event]:
     staff = world.staff[world.compromised_staff]
     acc = world.scenario_b_account
     cust = world.customer_of_account(acc)
@@ -92,7 +92,7 @@ def scenario_b(world: World, t0: datetime, rng: random.Random, ids: IdSource,
             malware_family="CobaltStrike-beacon", severity="med",
         ),
         Txn(
-            event_id=ids.event(), ts=_m(t0, 7), scenario="B",
+            event_id=ids.event(), ts=_m(t0, 7, compress), scenario="B",
             txn_id=ids.txn(), account_id=acc, customer_id=cust.customer_id,
             txn_type="RTGS", amount=1_850_000.0,
             payee_id=f"PAYEE-SHELL-{instance:02d}", payee_known=False,
@@ -107,12 +107,12 @@ def scenario_b(world: World, t0: datetime, rng: random.Random, ids: IdSource,
 # HNDL exfiltration: DB-2 bulk egress over quantum-vulnerable TLS to an unknown host.
 
 def scenario_c(world: World, t0: datetime, rng: random.Random, ids: IdSource,
-               instance: int = 0) -> list[Event]:
+               instance: int = 0, compress: float = 1.0) -> list[Event]:
     dst = f"203.0.113.{60 + instance % 40}"
     events: list[Event] = []
     for i in range(6):
         events.append(TlsSession(
-            event_id=ids.event(), ts=_m(t0, 2 * i), scenario="C",
+            event_id=ids.event(), ts=_m(t0, 2 * i, compress), scenario="C",
             src=world.exfil_server, dst_ip=dst, dst_known=False,
             tls_version="1.2", key_exchange="RSA-2048",
             bytes_out=700_000_000,  # 6 × 700MB ≈ 4.2 GB
