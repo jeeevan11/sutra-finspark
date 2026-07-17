@@ -69,6 +69,22 @@ body {
   animation: btn-flash 0.7s ease-out 1;
 }
 
+/* Reduced motion: keep the color cues (they aid comprehension — a fresh row,
+   a live status), drop nothing else since none of these move position, but
+   soften duration/intensity per prefers-reduced-motion guidance. */
+@media (prefers-reduced-motion: reduce) {
+  .flash-row {
+    animation-duration: 0.4s;
+  }
+  .live-pulse {
+    animation: none;
+    opacity: 0.8;
+  }
+  .btn-flash {
+    animation-duration: 0.3s;
+  }
+}
+
 /* Dense scrollbars for the event rivers. */
 .river-scroll::-webkit-scrollbar {
   width: 6px;

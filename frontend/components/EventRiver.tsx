@@ -6,8 +6,10 @@ import { Panel, TypeBadge } from "./ui";
 
 /**
  * One live event river (Security or Transactions).
- * Newest on top, capped upstream at 100 rows. Rows are keyed by event_id and
- * mount exactly once, so the `flash-row` animation fires only on arrival.
+ * Newest on top, capped upstream at 100 rows. No per-row flash: at sustained
+ * replay rates (~800+ events/min per river) a per-arrival flash fires far
+ * past any reasonable animation frequency and reads as a strobe, not a cue —
+ * position (newest-on-top) already communicates freshness.
  */
 export function EventRiver({
   title,
@@ -38,7 +40,7 @@ export function EventRiver({
             {events.map((e) => (
               <li
                 key={e.event_id}
-                className="flash-row flex items-center gap-2.5 px-3 py-[5px] font-mono text-[12.5px] leading-snug"
+                className="flex items-center gap-2.5 px-3 py-[5px] font-mono text-[12.5px] leading-snug"
               >
                 <span className="shrink-0 tabular-nums text-muted">
                   {formatIST(e.ts)}
