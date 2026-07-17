@@ -43,7 +43,7 @@ export function RuleBreakdown({
             className="h-full min-w-[3px] rounded-[2px]"
             style={{
               width: `${(r.points / total) * 100}%`,
-              backgroundColor: DOMAIN_COLOR[r.domain] ?? "#64748B",
+              backgroundColor: DOMAIN_COLOR[r.domain] ?? "#8B9BB4",
             }}
             title={`${r.rule_id} ${r.name}: +${r.points}`}
           />
@@ -70,7 +70,7 @@ export function RuleBreakdown({
           >
             <span
               className="mt-0.5 h-2.5 w-2.5 shrink-0 self-center rounded-sm"
-              style={{ backgroundColor: DOMAIN_COLOR[r.domain] ?? "#64748B" }}
+              style={{ backgroundColor: DOMAIN_COLOR[r.domain] ?? "#8B9BB4" }}
             />
             <span className="w-9 shrink-0 font-mono text-xs font-bold text-body">
               {r.rule_id}

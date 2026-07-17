@@ -8,12 +8,14 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      // Keep in sync with the CSS variables in app/globals.css (see the
+      // palette-refinement note there).
       colors: {
-        night: "#0B1220",
+        night: "#080D18",
         panel: "#111A2C",
-        edge: "#1E293B",
+        edge: "#24344E",
         body: "#E2E8F0",
-        muted: "#64748B",
+        muted: "#8B9BB4",
         accent: "#22D3EE",
         critical: "#EF4444",
         high: "#F59E0B",

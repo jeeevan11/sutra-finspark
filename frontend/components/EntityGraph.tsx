@@ -25,12 +25,12 @@ const TYPE_COLOR: Record<string, string> = {
   ip: "#EF4444",
 };
 
-const MAX_NEIGHBORS = 16;
-const W = 720;
-const H = 300;
+const MAX_NEIGHBORS = 14;
+const W = 380;
+const H = 264;
 const CX = W / 2;
-const CY = H / 2 + 6;
-const R = 104;
+const CY = H / 2 + 4;
+const R = 88;
 
 export function EntityGraph({ entityId }: { entityId: string }) {
   const [graph, setGraph] = useState<GraphResponse | null>(null);
@@ -112,7 +112,7 @@ export function EntityGraph({ entityId }: { entityId: string }) {
               y1={a.y}
               x2={b.x}
               y2={b.y}
-              stroke="#1E293B"
+              stroke="#24344E"
               strokeWidth={Math.min(1 + Math.log2(e.n), 4)}
             >
               <title>{`${e.type} ×${e.n} — ${e.src} → ${e.dst}`}</title>
@@ -121,7 +121,7 @@ export function EntityGraph({ entityId }: { entityId: string }) {
         })}
         {layout.shown.map((n) => {
           const p = layout.pos.get(n.id)!;
-          const c = TYPE_COLOR[n.type] ?? "#64748B";
+          const c = TYPE_COLOR[n.type] ?? "#8B9BB4";
           return (
             <g key={n.id}>
               <rect
@@ -129,7 +129,7 @@ export function EntityGraph({ entityId }: { entityId: string }) {
                 y={p.y - 7}
                 width={14}
                 height={14}
-                fill="#0B1220"
+                fill="#080D18"
                 stroke={c}
                 strokeWidth={2}
               >
@@ -137,10 +137,10 @@ export function EntityGraph({ entityId }: { entityId: string }) {
               </rect>
               <text
                 x={p.x}
-                y={p.y + (p.y >= CY ? 22 : -14)}
+                y={p.y + (p.y >= CY ? 20 : -12)}
                 textAnchor="middle"
-                fill="#64748B"
-                fontSize="9.5"
+                fill="#8B9BB4"
+                fontSize="9"
                 fontFamily="var(--font-jetbrains), ui-monospace, monospace"
               >
                 {n.id}
@@ -150,17 +150,17 @@ export function EntityGraph({ entityId }: { entityId: string }) {
         })}
         {/* hub on top */}
         <rect
-          x={hub.x - 11}
-          y={hub.y - 11}
-          width={22}
-          height={22}
+          x={hub.x - 10}
+          y={hub.y - 10}
+          width={20}
+          height={20}
           fill="#22D3EE"
-          stroke="#0B1220"
+          stroke="#080D18"
           strokeWidth={2}
         />
         <text
           x={hub.x}
-          y={hub.y + 28}
+          y={hub.y + 26}
           textAnchor="middle"
           fill="#E2E8F0"
           fontSize="11"
@@ -175,7 +175,7 @@ export function EntityGraph({ entityId }: { entityId: string }) {
           <span key={t} className="flex items-center gap-1.5">
             <span
               className="inline-block h-2 w-2"
-              style={{ border: `2px solid ${TYPE_COLOR[t] ?? "#64748B"}` }}
+              style={{ border: `2px solid ${TYPE_COLOR[t] ?? "#8B9BB4"}` }}
             />
             {t}
           </span>

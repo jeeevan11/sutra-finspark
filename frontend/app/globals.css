@@ -2,12 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Palette refinement for projector/screenshot legibility (ui-ux-pro-max dark-
+   mode contrast rules): deeper base = stronger panel separation, brighter
+   borders, and secondary text lifted from #64748B (below the >=3:1 dark-mode
+   floor on panels) to #8B9BB4 (~5:1). Identity (cyan accent, severity colors)
+   unchanged — the spec's palette, one notch more legible. */
 :root {
-  --bg: #0b1220;
+  --bg: #080d18;
   --panel: #111a2c;
-  --edge: #1e293b;
+  --edge: #24344e;
   --text: #e2e8f0;
-  --muted: #64748b;
+  --muted: #8b9bb4;
   --accent: #22d3ee;
   --critical: #ef4444;
   --high: #f59e0b;
@@ -124,7 +129,7 @@ button:not(:disabled),
   background-image: repeating-linear-gradient(
     -45deg,
     transparent 0 10px,
-    rgba(30, 41, 59, 0.55) 10px 12px
+    rgba(36, 52, 78, 0.55) 10px 12px
   );
 }
 

@@ -136,9 +136,13 @@ export default function AlertDetailPage({
   const tampered = verify.phase === "done" && !verified;
 
   return (
-    <div className="flex flex-col gap-4">
+    // At xl+ the money screen locks to ONE viewport (cancels the root layout's
+    // pb-40 dock clearance; nav 56 + pt 20 + pb 16 = 92): header and narrative
+    // stay fixed, the evidence chain scrolls inside its panel, the right rail
+    // scrolls if it overflows. Below xl it falls back to normal page flow.
+    <div className="flex flex-col gap-4 xl:-mb-40 xl:h-[calc(100dvh-92px)] xl:overflow-hidden">
       {/* Header */}
-      <Panel className="px-5 py-4">
+      <Panel className="shrink-0 px-5 py-4">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
           <RiskGauge risk={detail.risk} severity={detail.severity} />
           <div className="min-w-[280px] flex-1">
@@ -234,28 +238,32 @@ export default function AlertDetailPage({
         </div>
       </Panel>
 
-      {/* Narrative + actions */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_380px]">
-        <div className="flex flex-col gap-4">
-          <Panel title="Narrative" className="px-5 py-4">
+      {/* Narrative + evidence (left) · actions, rules, graph (right) */}
+      <div className="grid min-h-0 grid-cols-1 gap-4 xl:flex-1 xl:grid-cols-[1fr_380px]">
+        <div className="flex min-h-0 flex-col gap-4">
+          <Panel title="Narrative" className="shrink-0 px-5 py-4">
             <p className="max-w-[85ch] pt-2 text-[15.5px] leading-relaxed text-body/95">
               {detail.narrative}
             </p>
           </Panel>
 
-          <Panel title="Entity graph — 1-hop neighborhood" className="px-5 py-4">
-            <EntityGraph entityId={detail.entity_id} />
-          </Panel>
-
-          <Panel title="Evidence chain" className="px-5 py-4">
-            <div className="pt-2">
+          <Panel
+            title="Evidence chain"
+            right={
+              <span className="font-mono text-[11px] text-muted">
+                {detail.evidence.length} items
+              </span>
+            }
+            className="px-5 py-4 xl:flex xl:min-h-0 xl:flex-1 xl:flex-col"
+          >
+            <div className="river-scroll pt-2 xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
               <EvidenceTimeline evidence={detail.evidence} />
             </div>
           </Panel>
         </div>
 
-        <div className="flex flex-col gap-4">
-          <Panel title="Response actions" className="px-5 py-4">
+        <div className="river-scroll flex min-h-0 flex-col gap-4 xl:overflow-y-auto">
+          <Panel title="Response actions" className="shrink-0 px-5 py-4">
             <div className="flex flex-col gap-2 pt-2">
               {ACTIONS.map((a) => {
                 const confirmed = detail.status === a.matches;
@@ -297,7 +305,14 @@ export default function AlertDetailPage({
             </div>
           </Panel>
 
-          <Panel title="Rule-hit breakdown" className="px-5 py-4">
+          <Panel
+            title="Entity graph — 1 hop"
+            className="shrink-0 px-5 py-4"
+          >
+            <EntityGraph entityId={detail.entity_id} />
+          </Panel>
+
+          <Panel title="Rule-hit breakdown" className="shrink-0 px-5 py-4">
             <div className="pt-2">
               <RuleBreakdown
                 ruleHits={detail.rule_hits}
@@ -306,7 +321,7 @@ export default function AlertDetailPage({
             </div>
           </Panel>
 
-          <Panel title="Signature" className="px-5 py-4">
+          <Panel title="Signature" className="shrink-0 px-5 py-4">
             <p className="break-all pt-2 font-mono text-[10px] leading-relaxed text-muted">
               {detail.signature.slice(0, 256)}
               {detail.signature.length > 256 ? "…" : ""}

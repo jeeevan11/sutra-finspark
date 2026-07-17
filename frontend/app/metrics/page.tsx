@@ -29,8 +29,8 @@ const SILOED_COLOR = "#D97706";
 const FUSED_COLOR = "#0EA5C6";
 
 const TOOLTIP_STYLE: React.CSSProperties = {
-  backgroundColor: "#0B1220",
-  border: "1px solid #1E293B",
+  backgroundColor: "#080D18",
+  border: "1px solid #24344E",
   borderRadius: 6,
   fontSize: 12,
   fontFamily: "var(--font-jetbrains), monospace",
@@ -53,7 +53,7 @@ function ModeBarChart({
   if (data.length === 0) {
     return (
       <Panel title={title} className="px-3 py-3">
-        <div className="flex h-[240px] items-center justify-center text-sm text-muted">
+        <div className="flex h-[186px] items-center justify-center text-sm text-muted">
           no data
         </div>
       </Panel>
@@ -62,22 +62,22 @@ function ModeBarChart({
   return (
     <Panel title={title} className="px-3 py-3">
       {/* Fixed-px height parent so ResponsiveContainer never collapses to 0. */}
-      <div className="h-[240px] w-full pt-2">
+      <div className="h-[186px] w-full pt-2">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 24, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid
               vertical={false}
-              stroke="#1E293B"
+              stroke="#24344E"
               strokeDasharray="0"
             />
             <XAxis
               dataKey="mode"
               tick={{ fill: "#94A3B8", fontSize: 13 }}
-              axisLine={{ stroke: "#1E293B" }}
+              axisLine={{ stroke: "#24344E" }}
               tickLine={false}
             />
             <YAxis
-              tick={{ fill: "#64748B", fontSize: 11 }}
+              tick={{ fill: "#8B9BB4", fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               width={44}
@@ -195,8 +195,8 @@ export default function MetricsPage() {
   }, [load]);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-4">
+    <div className="flex flex-col gap-3 xl:-mb-40 xl:h-[calc(100dvh-92px)] xl:overflow-hidden">
+      <div className="flex shrink-0 items-center gap-4">
         <h1 className="text-lg font-semibold tracking-wide">
           Benchmark metrics — siloed vs SUTRA fused
         </h1>
@@ -238,12 +238,12 @@ export default function MetricsPage() {
         <>
           {/* Before / after hero */}
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-            <Panel className="px-5 py-5">
+            <Panel className="px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">
                 Siloed alerts
               </div>
               <div
-                className="mt-1 font-mono text-5xl font-bold tabular-nums"
+                className="mt-1 font-mono text-4xl font-bold tabular-nums"
                 style={{ color: SILOED_COLOR }}
               >
                 {formatIndianNumber(metrics.modes.siloed.total_alerts)}
@@ -252,12 +252,12 @@ export default function MetricsPage() {
                 independent SIEM + FRM alerting, {metrics.duration_hours}h
               </div>
             </Panel>
-            <Panel className="px-5 py-5">
+            <Panel className="px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">
                 SUTRA fused
               </div>
               <div
-                className="mt-1 font-mono text-5xl font-bold tabular-nums"
+                className="mt-1 font-mono text-4xl font-bold tabular-nums"
                 style={{ color: FUSED_COLOR }}
               >
                 {formatIndianNumber(metrics.modes.fused.total_alerts)}
@@ -266,11 +266,11 @@ export default function MetricsPage() {
                 entity-fused incidents, same telemetry
               </div>
             </Panel>
-            <Panel className="border-ok/40 px-5 py-5">
+            <Panel className="border-ok/40 px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">
                 Alert volume
               </div>
-              <div className="mt-1 font-mono text-6xl font-bold tabular-nums text-ok">
+              <div className="mt-1 font-mono text-4xl font-bold tabular-nums text-ok">
                 −{metrics.summary.alert_reduction_pct.toFixed(1)}%
               </div>
               <div className="mt-1 text-xs text-muted">
@@ -299,10 +299,10 @@ export default function MetricsPage() {
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-edge text-[11px] uppercase tracking-wider text-muted">
-                    <th className="px-4 py-2.5 font-medium">Scenario</th>
-                    <th className="px-2 py-2.5 font-medium">Name</th>
-                    <th className="px-2 py-2.5 font-medium">SUTRA fused</th>
-                    <th className="px-4 py-2.5 font-medium">Siloed</th>
+                    <th className="px-4 py-2 font-medium">Scenario</th>
+                    <th className="px-2 py-2 font-medium">Name</th>
+                    <th className="px-2 py-2 font-medium">SUTRA fused</th>
+                    <th className="px-4 py-2 font-medium">Siloed</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-edge/60">
@@ -312,11 +312,11 @@ export default function MetricsPage() {
                       const sc = metrics.scenarios[k];
                       return (
                         <tr key={k}>
-                          <td className="px-4 py-3 font-mono text-base font-bold text-accent">
+                          <td className="px-4 py-2 font-mono text-base font-bold text-accent">
                             {k}
                           </td>
-                          <td className="px-2 py-3 text-body">{sc.name}</td>
-                          <td className="px-2 py-3 font-mono text-xs">
+                          <td className="px-2 py-2 text-body">{sc.name}</td>
+                          <td className="px-2 py-2 font-mono text-xs">
                             {sc.fused.detected ? (
                               <span className="text-ok">
                                 ✓ detected · risk {sc.fused.risk} ·{" "}
@@ -327,7 +327,7 @@ export default function MetricsPage() {
                               <span className="text-critical">✗ missed</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 font-mono text-xs">
+                          <td className="px-4 py-2 font-mono text-xs">
                             <span
                               className={
                                 sc.siloed.detected ? "text-ok" : "text-critical"
