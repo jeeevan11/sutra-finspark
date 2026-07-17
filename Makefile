@@ -3,7 +3,7 @@ PY := backend/.venv/bin/python
 PIP := backend/.venv/bin/pip
 API := http://localhost:8000/api
 
-.PHONY: up down demo bench test deliverables export-sample-data venv dev-backend dev-frontend
+.PHONY: up down demo bench test deliverables export-sample-data venv dev-backend dev-frontend frontend-deps
 
 up:
 	docker compose up -d --build
@@ -35,5 +35,9 @@ export-sample-data: venv
 dev-backend: venv
 	cd backend && SUTRA_BUS=memory SUTRA_DATA_DIR=data .venv/bin/python -m uvicorn sutra.main:app --host 0.0.0.0 --port 8000
 
-dev-frontend:
+## Install frontend deps on first run (idempotent), so `make dev-frontend` works from a clean clone.
+frontend-deps:
+	@test -d frontend/node_modules || (cd frontend && npm install)
+
+dev-frontend: frontend-deps
 	cd frontend && npm run dev

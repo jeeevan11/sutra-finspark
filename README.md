@@ -117,7 +117,9 @@ Captured from the running Docker stack — see [`deliverables/screenshots/`](del
 2. Replace SQLite with the bank's system-of-record; move ML-DSA keys into an HSM.
 3. Real connectors: syslog/CEF collector, EDR webhook, core-banking read replica.
 4. Analyst feedback loop to retrain the anomaly model; per-branch rule tuning.
-5. MITRE ATT&CK tagging, PDF case-report export, optional local-LLM narrative toggle.
+5. PDF case-report export, optional local-LLM narrative toggle. (Per-alert MITRE
+   ATT&CK tagging and the 1-hop entity-graph view already ship on the alert-detail
+   page.)
 
 ## Repo layout
 

@@ -68,6 +68,10 @@ class Runtime:
         """Wipe alerts + graph, restart the world from seed (replay left stopped)."""
         if self.replay is not None:
             await self.replay.stop()
+        # retire the current engine so any action still in flight against it aborts
+        # instead of writing into the store we are about to wipe
+        if getattr(self, "fusion", None) is not None:
+            self.fusion.active = False
         await asyncio.sleep(0.3)  # let in-flight bus events drain
         self.store.wipe()
         self.signer.reset_chain()

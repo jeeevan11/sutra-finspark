@@ -97,7 +97,9 @@ async def verify_alert(request: Request, alert_id: str) -> dict:
     return {
         "alert_id": alert_id,
         "signature_valid": rt.signer.verify_record(payload_json, signature),
-        "chain_valid": rt.signer.verify_chain(rt.store.all_records()),
+        # anchor to the live chain head so a tail-truncated log is caught too
+        "chain_valid": rt.signer.verify_chain(
+            rt.store.all_records(), expected_head=rt.signer.last_hash),
         "algorithm": "ML-DSA-65",
         # the fingerprint bound into the signed record, not the live signer's
         "pubkey_fingerprint": record_fp or rt.signer.fingerprint,

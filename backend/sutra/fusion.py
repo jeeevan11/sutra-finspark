@@ -61,6 +61,10 @@ class FusionEngine:
         self.alert_labels: dict[str, Counter] = {}  # benchmark ground-truth bookkeeping
         self._seq = 0
         self._merge_notes: list[tuple[str, Alert]] = []
+        # False once a demo reset retires this engine — an action still in flight
+        # (300ms latency) against the old engine must not write into the wiped
+        # store / reset chain. See ActionAdapter.apply.
+        self.active = True
 
     # ------------------------------------------------------------------ ingest
 
@@ -228,7 +232,13 @@ class FusionEngine:
         else:
             alert = self.alerts[inc.alert_id]
             new_risk = max(alert.risk, risk)
-            if (new_risk == alert.risk and len(evidence) == len(alert.evidence)
+            # Compare like with like: `evidence` holds only detection events, but
+            # alert.evidence also carries any operator-action items (hold/stepup).
+            # Count non-action items on both sides, else an applied action skews
+            # the guard — dropping a genuine new-evidence update, or re-signing on
+            # every subsequent hit.
+            prior_event_count = sum(1 for i in alert.evidence if i.type != "action")
+            if (new_risk == alert.risk and len(evidence) == prior_event_count
                     and alert.ml_score == round(inc.ml_score, 1)):
                 return None  # nothing meaningful changed
             alert.risk = new_risk

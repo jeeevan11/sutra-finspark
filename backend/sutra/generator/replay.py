@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import heapq
+import logging
 import random
 import time
 from datetime import datetime, timedelta
@@ -23,6 +24,8 @@ from .world import World
 
 # Fixed scenario offsets in the batch day (hours from 00:00 IST).
 BATCH_SCENARIO_OFFSETS_H = {"A": 10.0, "B": 22.55, "C": 18.0}  # B txn lands 22:40 IST
+
+log = logging.getLogger("sutra.replay")
 
 
 def batch_events(world: World, seed: int, hours: float = 24.0,
@@ -119,9 +122,16 @@ class LiveReplay:
             heapq.heappush(self._pending, (ev.ts, ev.event_id, ev))
         return instance
 
+    def _trim_emit_ts(self, now: float) -> None:
+        # Keep only the last 15s of emit timestamps. Called on every emit (not
+        # just when status() is polled) so the list stays bounded even if nobody
+        # reads events_per_min for a long stretch.
+        cutoff = now - 15
+        if self._emit_wall_ts and self._emit_wall_ts[0] < cutoff:
+            self._emit_wall_ts = [t for t in self._emit_wall_ts if t >= cutoff]
+
     def events_per_min(self) -> float:
-        now = time.monotonic()
-        self._emit_wall_ts = [t for t in self._emit_wall_ts if now - t < 15]
+        self._trim_emit_ts(time.monotonic())
         return round(len(self._emit_wall_ts) * 60 / 15, 1)
 
     def status(self) -> dict:
@@ -167,6 +177,17 @@ class LiveReplay:
             due.sort(key=lambda e: (e.ts, e.event_id))
             for ev in due:
                 # live mode: strip generator-side ground-truth labels before the bus
-                await self.emit(ev.model_copy(update={"scenario": ""}))
+                try:
+                    await self.emit(ev.model_copy(update={"scenario": ""}))
+                except asyncio.CancelledError:
+                    raise
+                except Exception:  # noqa: BLE001
+                    # A transient bus error (e.g. a Redis blip) must not kill the
+                    # replay loop and leave status() falsely reporting "running".
+                    # Drop this event and keep the demo alive.
+                    log.exception("emit failed; dropping event %s", ev.event_id)
+                    continue
                 self.events_emitted += 1
-                self._emit_wall_ts.append(time.monotonic())
+                now_ts = time.monotonic()
+                self._emit_wall_ts.append(now_ts)
+                self._trim_emit_ts(now_ts)

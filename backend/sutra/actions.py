@@ -26,12 +26,19 @@ class ActionAdapter:
         self._n = 0
 
     async def apply(self, alert_id: str, action: str) -> dict:
-        alert = self.fusion.alerts.get(alert_id)
+        fusion = self.fusion
+        alert = fusion.alerts.get(alert_id)
         if alert is None:
             raise KeyError(alert_id)
         if action not in _STATUS:
             raise ValueError(action)
         await asyncio.sleep(LATENCY_S)  # simulated core-banking round trip
+
+        # A demo reset during that latency retires this engine (and wipes the
+        # store / resets the chain). Abort rather than sign a now-orphaned alert
+        # into the fresh chain and corrupt it.
+        if not fusion.active:
+            raise KeyError(alert_id)
 
         txn_items = [e for e in alert.evidence if e.type == "txn"]
         accounts = sorted({e.detail.get("account_id") for e in txn_items
@@ -55,9 +62,9 @@ class ActionAdapter:
             summary=f"[{action.upper()}] {result}", entity_refs=[alert.entity_id],
             rule_ids=[], detail={"action": action},
         ))
-        if self.fusion.signer is not None:
-            self.fusion.signer.sign_alert(alert)
-        if self.fusion.store is not None:
-            self.fusion.store.append_record(alert)
+        if fusion.signer is not None:
+            fusion.signer.sign_alert(alert)
+        if fusion.store is not None:
+            fusion.store.append_record(alert)
         return {"ok": True, "alert_id": alert_id, "action": action,
                 "status": alert.status, "result": result}

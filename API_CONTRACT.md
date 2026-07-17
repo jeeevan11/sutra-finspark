@@ -118,6 +118,9 @@ interface Metrics {
     analyst_hours_saved_per_day: number;
     rupees_at_risk_flagged: number;  // total INR in scenario txns caught
   };
+  _bench_wall_seconds?: {            // internal timing (underscore = non-contract), ignore
+    fused: number; siloed: number; events: number;
+  };
 }
 interface ModeStats {
   total_alerts: number;

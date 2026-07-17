@@ -83,3 +83,126 @@ def test_inject_never_clears_operator_pause(world):
     paused_after, staged = asyncio.run(scenario())
     assert paused_after, "inject must not resume a paused demo"
     assert staged, "scenario events are staged for when the operator resumes"
+
+
+def test_action_evidence_does_not_skew_update_dedup(world):
+    """After an operator action appends an action-type EvidenceItem, a later
+    detection hit that adds a genuinely new event must still update the alert —
+    the dedup guard must compare non-action evidence only (finding #7)."""
+    import asyncio
+
+    from sutra.actions import ActionAdapter
+    from sutra.schemas import EvidenceItem
+    from datetime import timezone
+
+    fusion = FusionEngine(world, RuleEngine(world, "fused"), EntityGraph())
+    fusion.graph.ingest(_txn_event(world, "CUST-0201", "E1"))
+    h1 = _hit(95, ["CUST-0201"], T0, "k1", ["E1"])
+    inc = fusion._route(h1); fusion._apply(inc, h1)
+    note = fusion._score_and_alert(inc, T0)
+    assert note is not None
+    alert = fusion.alerts[inc.alert_id]
+
+    # simulate an applied action: append an action-type evidence item
+    alert.evidence.append(EvidenceItem(
+        event_id="ACT-0001", ts=T0, type="action", summary="[HOLD] held",
+        entity_refs=[], rule_ids=[], detail={"action": "hold"}))
+    n_before = len([e for e in alert.evidence if e.type != "action"])
+
+    # a new detection event on the same incident (risk unchanged, still capped)
+    fusion.graph.ingest(_txn_event(world, "CUST-0201", "E2"))
+    h2 = _hit(95, ["CUST-0201"], T0, "k2", ["E2"])
+    fusion._apply(inc, h2)
+    out = fusion._score_and_alert(inc, T0)
+
+    assert out is not None, "new evidence must produce an update, not be dropped"
+    n_after = len([e for e in alert.evidence if e.type != "action"])
+    assert n_after > n_before, "the new event must appear in evidence"
+    # the action item survives the update
+    assert any(e.type == "action" for e in alert.evidence)
+
+
+def test_bus_drops_malformed_entry_without_dying():
+    """A malformed wire dict must be dropped, not propagate out of consume() and
+    kill the consumer (finding #5)."""
+    import asyncio
+
+    from sutra.bus import MemoryBus
+    from sutra.generator.world import build_world
+    from sutra.generator.noise import IdSource
+    from sutra.generator.scenarios import scenario_c
+    from sutra.config import BATCH_SIM_START
+
+    async def run():
+        bus = MemoryBus()
+        good = scenario_c(build_world(42), BATCH_SIM_START, __import__("random").Random(1), IdSource())[0]
+        await bus.publish(good)
+        await bus.q.put({"type": "not_a_real_event", "event_id": "X", "ts": "2026-01-01T00:00:00+00:00"})
+        await bus.publish(good)
+        gen = bus.consume()
+        first = await asyncio.wait_for(gen.__anext__(), timeout=2)
+        second = await asyncio.wait_for(gen.__anext__(), timeout=2)  # skips the bad one
+        return first.event_id, second.event_id
+
+    a, b = asyncio.run(run())
+    assert a == b, "both yielded events are the good one; the malformed entry was skipped"
+
+
+def test_replay_loop_survives_emit_error(world):
+    """A transient emit failure must not kill the replay loop or leave status()
+    falsely reporting running (finding #3), and _emit_wall_ts stays bounded
+    (finding #4)."""
+    import asyncio
+    from sutra.generator.replay import LiveReplay
+
+    async def run():
+        calls = {"n": 0}
+        async def flaky(_ev):
+            calls["n"] += 1
+            if calls["n"] % 3 == 0:
+                raise ConnectionError("redis blip")  # transient
+        replay = LiveReplay(world, 42, emit=flaky)
+        replay.start(20)
+        await asyncio.sleep(1.2)  # let the loop emit + hit some errors
+        running = replay.running
+        task_alive = replay._task is not None and not replay._task.done()
+        emitted = replay.events_emitted
+        await replay.stop()
+        return running, task_alive, emitted, calls["n"]
+
+    running, task_alive, emitted, attempted = asyncio.run(run())
+    assert running and task_alive, "loop survived transient emit errors"
+    assert attempted > emitted, "some emits raised but were dropped, not fatal"
+    assert emitted > 0, "good emits still counted"
+
+
+def test_action_during_reset_is_aborted(world):
+    """An action in flight when its engine is retired (demo reset) must abort
+    rather than write into the wiped store / reset chain (finding #6)."""
+    import asyncio
+    from sutra.actions import ActionAdapter
+    from sutra.pqc import AlertSigner
+    from sutra.store import AlertStore
+
+    signer, store = AlertSigner(), AlertStore()
+    fusion = FusionEngine(world, RuleEngine(world, "fused"), EntityGraph(),
+                          signer=signer, store=store)
+    fusion.graph.ingest(_txn_event(world, "CUST-0202", "F1"))
+    h = _hit(95, ["CUST-0202"], T0, "k", ["F1"])
+    inc = fusion._route(h); fusion._apply(inc, h)
+    fusion._score_and_alert(inc, T0)
+    aid = inc.alert_id
+    adapter = ActionAdapter(fusion)
+
+    async def run():
+        task = asyncio.create_task(adapter.apply(aid, "hold"))
+        await asyncio.sleep(0.05)     # action is mid-latency
+        fusion.active = False         # reset retires the engine
+        try:
+            await task
+            return "completed"
+        except KeyError:
+            return "aborted"
+
+    outcome = asyncio.run(run())
+    assert outcome == "aborted", "stale action must not write after reset"

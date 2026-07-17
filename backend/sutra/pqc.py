@@ -81,13 +81,19 @@ class AlertSigner:
         except Exception:  # noqa: BLE001 — malformed sig = invalid, never a crash
             return False
 
-    def verify_chain(self, records: list[tuple[str, str, str, str]]) -> bool:
+    def verify_chain(self, records: list[tuple[str, str, str, str]],
+                     expected_head: Optional[str] = None) -> bool:
         """records: (payload_json, signature_hex, prev_hash, record_hash) in
         insertion order. Valid iff, for EVERY record: (a) its ML-DSA signature
         verifies (an unkeyed hash alone could be recomputed by a tamperer —
         including on the chain tail, which linkage cannot see), (b) its stored
         hash matches a fresh recomputation, and (c) its prev_hash equals its
-        predecessor's hash (linkage)."""
+        predecessor's hash (linkage).
+
+        `expected_head` anchors the walk to the live in-memory chain head
+        (`self.last_hash`). Without it, a TAIL-TRUNCATED log — delete the last N
+        records — is an intact valid prefix and would pass; the anchor catches
+        that, since the surviving log's head hash won't match the live head."""
         prev = GENESIS
         for payload_json, signature_hex, prev_hash, stored_hash in records:
             try:
@@ -101,4 +107,6 @@ class AlertSigner:
             if not self.verify_record(payload_json, signature_hex):
                 return False
             prev = stored_hash
+        if expected_head is not None and prev != expected_head:
+            return False  # log truncated (or replaced) relative to the live head
         return True

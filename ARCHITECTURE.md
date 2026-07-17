@@ -26,9 +26,9 @@
         │ REST + WebSocket (CORS localhost:3000)
         ▼
 ┌──────────────────────┐
-│  Next.js 14 frontend │  Live Ops · Alerts · Alert detail · Metrics · Quantum
-│  + demo control dock │  (dark SOC console, WebSocket rivers, PQC verify)
-└──────────────────────┘
+│  Next.js 14 frontend │  Overview · Live Ops · Alerts · Alert detail · Metrics · Quantum
+│  + demo control dock │  (dark SOC console, WebSocket rivers, entity-graph + MITRE
+└──────────────────────┘   tags on alert detail, PQC verify)
 ```
 
 ## Data flow (one event)
@@ -100,5 +100,3 @@
 - Throughput today: the single-process pipeline scores the full 101k-event batch day
   in ~1.5 s (~68k events/s) on a laptop — headroom for a mid-size bank before any of
   the above is needed.
-```
-```

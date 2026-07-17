@@ -111,3 +111,32 @@ def test_fingerprint_bound_into_signed_record():
     store.append_record(a)
     payload_json, _, _, _ = store.latest_record(a.alert_id)
     assert j.loads(payload_json)["pubkey_fingerprint"] == signer.fingerprint
+
+
+def test_tail_truncation_caught_by_head_anchor():
+    """Deleting the last record(s) leaves a valid PREFIX that passes an unanchored
+    walk — anchoring verify_chain to the live head (signer.last_hash) catches it."""
+    from sqlalchemy import delete, select
+    from sqlalchemy.orm import Session
+
+    from sutra.store import AlertRecord
+
+    signer = AlertSigner()
+    store = AlertStore()
+    for i in (1, 2, 3):
+        a = _alert(i)
+        signer.sign_alert(a)
+        store.append_record(a)
+    records = store.all_records()
+    assert signer.verify_chain(records)                                   # intact
+    assert signer.verify_chain(records, expected_head=signer.last_hash)   # anchored ok
+
+    # truncate the tail: drop the newest record
+    with Session(store.engine) as s:
+        newest = s.execute(select(AlertRecord).order_by(AlertRecord.seq.desc())
+                           .limit(1)).scalar_one()
+        s.execute(delete(AlertRecord).where(AlertRecord.seq == newest.seq))
+        s.commit()
+    truncated = store.all_records()
+    assert signer.verify_chain(truncated)                                 # prefix still "valid"
+    assert not signer.verify_chain(truncated, expected_head=signer.last_hash)  # anchor catches it

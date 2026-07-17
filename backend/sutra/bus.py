@@ -9,13 +9,28 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import AsyncIterator
+import logging
+from typing import AsyncIterator, Optional
 
 from .schemas import Event, parse_event, wire_dict
+
+log = logging.getLogger("sutra.bus")
 
 STREAM = "sutra:events"
 GROUP = "sutra-core"
 CONSUMER = "core-1"
+
+
+def _safe_parse(d: dict) -> Optional[Event]:
+    """Parse one wire dict, or return None on a malformed entry. A single bad
+    event must never propagate out of the consume() generator — that would end
+    the async-for and permanently stop the consumer task (the ingest-side
+    try/except cannot catch an exception raised inside __anext__)."""
+    try:
+        return parse_event(d)
+    except Exception:  # noqa: BLE001
+        log.exception("dropping unparseable bus entry: %r", d)
+        return None
 
 
 class MemoryBus:
@@ -28,7 +43,9 @@ class MemoryBus:
     async def consume(self) -> AsyncIterator[Event]:
         while True:
             d = await self.q.get()
-            yield parse_event(d)
+            ev = _safe_parse(d)
+            if ev is not None:
+                yield ev
 
     async def close(self) -> None:
         return None
@@ -61,10 +78,15 @@ class RedisBus:
                                            count=200, block=250)
             for _stream, entries in resp or []:
                 for entry_id, fields in entries:
+                    ev = None
                     try:
-                        yield parse_event(json.loads(fields["j"]))
+                        ev = _safe_parse(json.loads(fields["j"]))
+                    except Exception:  # noqa: BLE001 — bad JSON: drop, keep consuming
+                        log.exception("dropping malformed bus entry %s", entry_id)
                     finally:
                         await self.r.xack(STREAM, GROUP, entry_id)
+                    if ev is not None:
+                        yield ev
 
     async def close(self) -> None:
         await self.r.aclose()

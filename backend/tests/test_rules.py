@@ -126,6 +126,13 @@ def test_r5_velocity(world, engine):
     assert "R5" not in _rules(hits2)
 
 
+def test_r5_velocity_near_miss(world, engine):
+    """Just under the 3× multiple must NOT fire — the boundary, not a clear miss."""
+    c = world.customers["CUST-0023"]
+    hit = engine.observe(txn(world, "CUST-0023", c.daily_outflow_mean * 2.9, ts=T0))
+    assert "R5" not in _rules(hit)
+
+
 def test_r6_edr_then_txn(world, engine):
     st = world.staff[world.compromised_staff]
     edr = EdrAlert(event_id=_eid(), ts=T0, terminal_id=st.terminal_id,
@@ -175,6 +182,14 @@ def test_r8_escalating_egress(world, engine):
     assert not e2.observe(tls("APP-1", 2_000_000_000, ts=T0, kex="X25519Kyber768-hybrid"))
 
 
+def test_r8_below_one_gb_near_miss(world):
+    """0.9 GB over vulnerable kex to an unknown dst is under the 1 GB step —
+    the volume boundary, not just a wrong-category miss."""
+    e = RuleEngine(world, "fused")
+    hits = e.observe(tls("DB-2", 900_000_000, ts=T0))  # RSA-2048, unknown dst
+    assert "R8" not in _rules(hits)
+
+
 def test_r9_dormant(world, engine):
     acc = world.scenario_b_account
     cust = world.customer_of_account(acc).customer_id
@@ -182,6 +197,15 @@ def test_r9_dormant(world, engine):
     assert "R9" in _rules(first)
     second = engine.observe(txn(world, cust, 5_000, ts=T0 + timedelta(minutes=1)))
     assert "R9" not in _rules(second)
+
+
+def test_r9_active_account_near_miss(world, engine):
+    """An identical txn on a NON-dormant account must not fire R9 — the
+    dormancy predicate, not just the once-per-account dedup."""
+    victim = world.victim_customer  # anchored non-dormant
+    assert world.customers[victim].accounts[0] not in world.dormant_accounts
+    hit = engine.observe(txn(world, victim, 5_000, ts=T0))
+    assert "R9" not in _rules(hit)
 
 
 def test_r10_impossible_travel(world, engine):
