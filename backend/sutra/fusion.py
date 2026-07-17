@@ -14,7 +14,7 @@ from typing import Optional
 
 from .config import (ALERT_THRESHOLD, INCIDENT_WINDOW_MIN, ML_MIN_POINTS, ML_WEIGHT,
                      RULE_WEIGHT, SILOED_THRESHOLD, severity_for)
-from .explain import TITLES, build_narrative, guess_pattern
+from .explain import MITRE_TAGS, TITLES, build_narrative, guess_pattern
 from .generator.world import World
 from .graph import EntityGraph
 from .rules.engine import Hit, RuleEngine
@@ -210,6 +210,7 @@ class FusionEngine:
                                   points=h.points, detail=h.detail, ts=h.ts)
                      for h in hits]
         tags = ["quantum"] if any(h.domain == "quantum" for h in hits) else []
+        tags += MITRE_TAGS.get(pattern, [])
 
         if inc.alert_id is None:
             self._seq += 1

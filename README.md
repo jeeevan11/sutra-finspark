@@ -92,8 +92,9 @@ open-source; the finished app runs air-gapped.
 
 Captured from the running Docker stack — see [`deliverables/screenshots/`](deliverables/screenshots/):
 
+- [Overview cover page](deliverables/screenshots/overview.png) — scenario case previews, benchmark stats, START DEMO flow (`/overview`)
 - [Live Ops mid-Scenario A](deliverables/screenshots/live-ops-scenario-a.png) — both event rivers flowing, the critical account-takeover alert in the feed
-- [Alert detail "money screen"](deliverables/screenshots/alert-detail-scenario-a.png) — narrative, full evidence chain, rule-hit breakdown, ML-DSA-65 signature
+- [Alert detail "money screen"](deliverables/screenshots/alert-detail-scenario-a.png) — narrative, entity-graph neighborhood, full evidence chain, rule-hit breakdown, MITRE ATT&CK tags, ML-DSA-65 signature
 - [Fused-vs-siloed benchmark](deliverables/screenshots/metrics.png) — −91.4% alert volume, 0 false positives
 - [HNDL crypto inventory](deliverables/screenshots/quantum.png) — DB-2 flagged quantum-vulnerable red
 

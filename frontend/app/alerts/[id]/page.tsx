@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { EntityGraph } from "@/components/EntityGraph";
 import { EvidenceTimeline } from "@/components/EvidenceTimeline";
 import { RiskGauge } from "@/components/RiskGauge";
 import { RuleBreakdown } from "@/components/RuleBreakdown";
@@ -152,6 +153,17 @@ export default function AlertDetailPage({
                   QUANTUM / HNDL
                 </span>
               )}
+              {detail.tags
+                .filter((t) => /^T\d{4}/.test(t))
+                .map((t) => (
+                  <span
+                    key={t}
+                    title={`MITRE ATT&CK ${t}`}
+                    className="rounded-full border border-edge bg-panel px-2.5 py-0.5 font-mono text-[11px] text-body/70"
+                  >
+                    ATT&amp;CK {t}
+                  </span>
+                ))}
             </div>
             <h1 className="mt-2 text-xl font-semibold leading-snug text-body">
               {detail.title}
@@ -229,6 +241,10 @@ export default function AlertDetailPage({
             <p className="max-w-[85ch] pt-2 text-[15.5px] leading-relaxed text-body/95">
               {detail.narrative}
             </p>
+          </Panel>
+
+          <Panel title="Entity graph — 1-hop neighborhood" className="px-5 py-4">
+            <EntityGraph entityId={detail.entity_id} />
           </Panel>
 
           <Panel title="Evidence chain" className="px-5 py-4">

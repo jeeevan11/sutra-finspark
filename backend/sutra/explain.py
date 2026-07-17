@@ -86,6 +86,15 @@ TITLES = {
     "generic": "Correlated risk activity — {entity}",
 }
 
+# MITRE ATT&CK technique tags per dominant pattern (rendered as chips in the UI;
+# kept to techniques the evidence actually demonstrates, nothing aspirational).
+MITRE_TAGS = {
+    "ato": ["T1110.004", "T1078"],          # credential stuffing, valid accounts
+    "terminal_compromise": ["T1071.001", "T1657"],  # C2 over app protocol, financial theft
+    "quantum_exfil": ["T1048.002"],         # exfil over encrypted non-C2 protocol
+    "generic": [],
+}
+
 
 def _fmt(ts: datetime) -> str:
     return ist(ts).strftime("%H:%M")

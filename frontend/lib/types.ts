@@ -207,3 +207,20 @@ export interface AlertPushMessage {
 
 export type Scenario = "A" | "B" | "C";
 export type ReplaySpeed = 1 | 5 | 20;
+
+// ---- entity graph (GET /api/graph/{entity_id}) ----
+export interface GraphNode {
+  id: string;
+  type: string;
+}
+export interface GraphEdge {
+  src: string;
+  dst: string;
+  type: string;
+  ts: string;
+  event_id: string;
+}
+export interface GraphResponse {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}

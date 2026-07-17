@@ -3,6 +3,7 @@ import type {
   ActionType,
   AlertDetail,
   AlertsResponse,
+  GraphResponse,
   Metrics,
   QuantumResponse,
   ReplayControlResponse,
@@ -113,4 +114,8 @@ export function replayInject(
   scenario: Scenario,
 ): Promise<ReplayControlResponse | null> {
   return postJSON<ReplayControlResponse>(`/api/replay/inject/${scenario}`);
+}
+
+export function getGraph(entityId: string): Promise<GraphResponse | null> {
+  return getJSON<GraphResponse>(`/api/graph/${encodeURIComponent(entityId)}`);
 }
