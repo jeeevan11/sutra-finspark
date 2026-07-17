@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSutra } from "./SutraProvider";
 
 const LINKS = [
+  { href: "/overview", label: "Overview" },
   { href: "/", label: "Live Ops" },
   { href: "/alerts", label: "Alerts" },
   { href: "/metrics", label: "Metrics" },

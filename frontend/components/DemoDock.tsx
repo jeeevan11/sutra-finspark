@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { replayInject, replayPause, replayReset, replayStart } from "@/lib/api";
 import { formatIST } from "@/lib/format";
 import type { ReplaySpeed, Scenario } from "@/lib/types";
@@ -10,6 +11,7 @@ const SPEEDS: ReplaySpeed[] = [1, 5, 20];
 const SCENARIOS: Scenario[] = ["A", "B", "C"];
 
 export function DemoDock() {
+  const pathname = usePathname();
   const { status, backendUp, applyStatus } = useSutra();
   const [speed, setSpeed] = useState<ReplaySpeed>(20);
   const [flash, setFlash] = useState<Record<string, number>>({});
@@ -127,6 +129,11 @@ export function DemoDock() {
     },
     [],
   );
+
+  // The /overview cover page has its own primary CTA and is composed to fit
+  // one clean screenshot — hide the floating dock there (hotkeys stay live,
+  // since every hook above has already run).
+  if (pathname === "/overview") return null;
 
   return (
     <div className="fixed bottom-4 right-4 z-50 w-[300px] select-none">
