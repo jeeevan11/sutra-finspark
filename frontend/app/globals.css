@@ -25,6 +25,22 @@ body {
   color: var(--text);
 }
 
+/* Native <button> defaults to cursor:default — every control in this app is a
+   button, so opt them all back into a pointer. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+/* Visible keyboard focus. The browser default ring is near-invisible on this
+   dark panel, and the whole demo is driven from the keyboard. :focus-visible
+   only fires for keyboard focus, so mouse clicks stay clean. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 /* Subtle background flash on newly arrived rows — fades out over ~1s. */
 @keyframes row-flash {
   0% {
